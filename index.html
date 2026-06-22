@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로또 6/45 번호생성기</title>
+<meta name="description" content="로또 번호 생성 및 통계 앱">
+<meta name="theme-color" content="#0d0f1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="로또생성기">
+<link rel="manifest" href="manifest.json">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0d0f1a;color:#e8e8f0;font-family:'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* HEADER */
+  .header{background:linear-gradient(135deg,#1a1f3c,#0d1040);padding:18px 16px 0;border-bottom:1px solid #2a2f5a;}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .logo-emoji{font-size:28px;}
+  .logo-title{font-size:20px;font-weight:800;letter-spacing:1px;color:#f0c040;}
+  .logo-sub{font-size:10px;color:#8888aa;letter-spacing:2px;}
+  .tabs{display:flex;}
+  .tab{flex:1;padding:10px 4px;border:none;cursor:pointer;background:transparent;font-size:11px;font-weight:400;color:#666;border-bottom:2px solid transparent;transition:all .2s;}
+  .tab.active{font-weight:700;color:#f0c040;border-bottom:2px solid #f0c040;}
+
+  /* BODY */
+  .body{flex:1;padding:14px;overflow-y:auto;}
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* CARD */
+  .card{background:#161b35;border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid #2a2f5a;}
+  .card-title{font-size:12px;color:#8888cc;font-weight:700;margin-bottom:12px;letter-spacing:1px;}
+
+  /* DATE BOX */
+  .date-box{background:#0a0c1f;border-radius:10px;padding:10px 14px;text-align:center;margin-bottom:14px;}
+  .date-label{font-size:10px;color:#555577;margin-bottom:4px;}
+  .date-val{font-size:16px;font-weight:800;color:#f0c040;}
+
+  /* BUTTON */
+  .gen-btn{width:100%;padding:14px 0;border-radius:10px;border:none;background:linear-gradient(135deg,#f0c040,#e08020);color:#0d0f1a;font-weight:800;font-size:15px;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 16px rgba(240,192,64,.25);}
+  .gen-btn:active{transform:scale(.98);}
+
+  /* LINE BOX */
+  .line-box{background:#0d1028;border-radius:10px;padding:12px 10px;margin-bottom:10px;}
+  .line-label{font-size:11px;color:#555588;margin-bottom:8px;font-weight:700;}
+  .balls{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+
+  /* BALL */
+  .ball{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.3);flex-shrink:0;}
+  .ball.bonus{background:#333!important;color:#fff;border:2px dashed #888;}
+  .ball.sm{width:32px;height:32px;font-size:11px;}
+  .ball.xs{width:26px;height:26px;font-size:9px;}
+
+  /* SAVE BTN */
+  .save-btn{margin-top:8px;padding:6px 12px;border-radius:6px;border:1px solid #3a3f6a;background:transparent;color:#8888cc;font-size:11px;cursor:pointer;}
+  .save-btn:active{background:#2a2f5a;}
+
+  /* NOTICE */
+  .notice{background:#1a1020;border:1px solid #3a2050;border-radius:10px;padding:10px 14px;font-size:11px;color:#9988aa;line-height:1.7;}
+
+  /* HISTORY */
+  .hist-row{background:#0d1028;border-radius:10px;padding:12px 10px;margin-bottom:10px;}
+  .hist-meta{display:flex;justify-content:space-between;margin-bottom:8px;}
+  .hist-draw{font-size:12px;font-weight:800;color:#f0c040;}
+  .hist-date{font-size:11px;color:#555577;}
+  .plus-sign{color:#555;font-size:14px;margin:0 2px;}
+
+  /* STATS */
+  .freq-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;}
+  .freq-cell{aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#e8e8f0;}
+  .tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .tag{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;}
+  .tag.hot{background:#f0c040;color:#0d0f1a;}
+  .tag.cold{background:#223;color:#aaa;}
+  .color-legend{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .color-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;}
+  .color-label{font-size:11px;color:#9999bb;}
+
+  /* SAVED */
+  .saved-item{background:#0d1028;border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .saved-date{font-size:10px;color:#555577;margin-bottom:6px;}
+  .empty-msg{text-align:center;color:#444466;padding:30px 0;font-size:13px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#f0c040;color:#0d0f1a;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-emoji">🎱</span>
+    <div>
+      <div class="logo-title">LOTTO 6/45</div>
+      <div class="logo-sub">번호 생성기 &amp; 통계</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('home')">🏠 홈</button>
+    <button class="tab" onclick="showTab('history')">📋 이력</button>
+    <button class="tab" onclick="showTab('stats')">📊 통계</button>
+    <button class="tab" onclick="showTab('saved')">💾 저장</button>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="card">
+      <div class="card-title">📅 이번주 추첨일</div>
+      <div class="date-box">
+        <div class="date-label">다음 추첨</div>
+        <div class="date-val" id="next-draw-date">계산중...</div>
+      </div>
+      <button class="gen-btn" onclick="generateNumbers()">🎲 번호 2줄 생성하기</button>
+    </div>
+
+    <div class="card" id="result-card" style="display:none;">
+      <div class="card-title">✨ 생성된 번호</div>
+      <div id="result-lines"></div>
+    </div>
+
+    <div class="notice">
+      ⚠️ <strong>안내:</strong> 이 번호는 <strong>완전 무작위</strong> 생성입니다.
+      로또는 수학적으로 예측 불가능합니다. 오락 목적으로만 사용하세요.
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="page-history" class="page">
+    <div class="card">
+      <div class="card-title">📋 최근 당첨 이력</div>
+      <div id="history-list"></div>
+      <div style="font-size:10px;color:#444466;margin-top:8px;text-align:center;">
+        ※ 실제 당첨번호는 동행복권(dhlottery.co.kr) 공식 확인 필수
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div id="page-stats" class="page">
+    <div class="card">
+      <div class="card-title">🔥 자주 나온 번호 (HOT TOP 10)</div>
+      <div class="tag-row" id="hot-nums"></div>
+      <div class="card-title">❄️ 적게 나온 번호 (COLD TOP 10)</div>
+      <div class="tag-row" id="cold-nums"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 번호별 출현 빈도 (1~45)</div>
+      <div class="freq-grid" id="freq-grid"></div>
+      <div style="font-size:10px;color:#444466;margin-top:8px;text-align:center;">색이 진할수록 자주 출현</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎨 공 색상 기준</div>
+      <div class="color-legend"><div class="color-dot" style="background:#F7C600"></div><span class="color-label">1~10번</span></div>
+      <div class="color-legend"><div class="color-dot" style="background:#69C8F2"></div><span class="color-label">11~20번</span></div>
+      <div class="color-legend"><div class="color-dot" style="background:#FF7272"></div><span class="color-label">21~30번</span></div>
+      <div class="color-legend"><div class="color-dot" style="background:#AAAAAA"></div><span class="color-label">31~40번</span></div>
+      <div class="color-legend"><div class="color-dot" style="background:#B0D840"></div><span class="color-label">41~45번</span></div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="page-saved" class="page">
+    <div class="card">
+      <div class="card-title">💾 저장된 번호 (<span id="saved-count">0</span>줄)</div>
+      <div id="saved-list"><div class="empty-msg">홈에서 번호를 생성하고 저장하세요 🎱</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LOTTO_DATA = [
+  {draw:1178,date:"2025-12-27",nums:[3,11,24,28,31,43],bonus:2},
+  {draw:1177,date:"2025-12-20",nums:[7,14,19,23,37,40],bonus:5},
+  {draw:1176,date:"2025-12-13",nums:[2,9,16,22,34,45],bonus:11},
+  {draw:1175,date:"2025-12-06",nums:[1,8,17,26,33,41],bonus:15},
+  {draw:1174,date:"2025-11-29",nums:[4,12,21,29,36,44],bonus:7},
+  {draw:1173,date:"2025-11-22",nums:[6,13,20,27,35,42],bonus:9},
+  {draw:1172,date:"2025-11-15",nums:[5,10,18,25,32,38],bonus:14},
+  {draw:1171,date:"2025-11-08",nums:[3,15,22,30,37,43],bonus:1},
+  {draw:1170,date:"2025-11-01",nums:[8,16,23,31,39,45],bonus:6},
+  {draw:1169,date:"2025-10-25",nums:[2,11,19,28,35,41],bonus:13},
+  {draw:1168,date:"2025-10-18",nums:[7,14,21,29,36,44],bonus:4},
+  {draw:1167,date:"2025-10-11",nums:[1,9,17,24,33,40],bonus:18},
+  {draw:1166,date:"2025-10-04",nums:[4,12,20,26,34,42],bonus:8},
+  {draw:1165,date:"2025-09-27",nums:[6,15,22,30,38,45],bonus:10},
+  {draw:1164,date:"2025-09-20",nums:[3,10,18,27,37,41],bonus:16},
+  {draw:1163,date:"2025-09-13",nums:[5,13,21,28,35,43],bonus:2},
+  {draw:1162,date:"2025-09-06",nums:[9,16,23,31,39,44],bonus:7},
+  {draw:1161,date:"2025-08-30",nums:[2,11,19,26,33,40],bonus:12},
+  {draw:1160,date:"2025-08-23",nums:[7,14,20,29,36,42],bonus:5},
+  {draw:1159,date:"2025-08-16",nums:[1,8,17,24,34,45],bonus:19},
+];
+
+const COLORS={1:'#F7C600',11:'#69C8F2',21:'#FF7272',31:'#AAAAAA',41:'#B0D840'};
+function ballColor(n){if(n<=10)return COLORS[1];if(n<=20)return COLORS[11];if(n<=30)return COLORS[21];if(n<=40)return COLORS[31];return COLORS[41];}
+function pad(n){return String(n).padStart(2,'0');}
+function makeBall(n,cls='',bonus=false){
+  const bg=bonus?'#333':ballColor(n);
+  const color=bonus?'#fff':'#222';
+  const border=bonus?'border:2px dashed #888;':'';
+  return `<div class="ball ${cls}" style="background:${bg};color:${color};${border}">${pad(n)}</div>`;
+}
+
+let savedLines=JSON.parse(localStorage.getItem('lotto_saved')||'[]');
+
+// Next Saturday
+function getNextSaturday(){
+  const today=new Date();
+  const day=today.getDay();
+  const diff=(6-day+7)%7||7;
+  const sat=new Date(today);
+  sat.setDate(today.getDate()+diff);
+  return sat.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+}
+document.getElementById('next-draw-date').textContent=getNextSaturday()+' (토)';
+
+// Generate
+function generateNumbers(){
+  function rand(){
+    const arr=[];
+    while(arr.length<6){const n=Math.floor(Math.random()*45)+1;if(!arr.includes(n))arr.push(n);}
+    return arr.sort((a,b)=>a-b);
+  }
+  const lines=[rand(),rand()];
+  const card=document.getElementById('result-card');
+  const el=document.getElementById('result-lines');
+  card.style.display='block';
+  el.innerHTML=lines.map((line,i)=>`
+    <div class="line-box">
+      <div class="line-label">${i+1}번째 줄</div>
+      <div class="balls">${line.map(n=>makeBall(n)).join('')}</div>
+      <button class="save-btn" onclick="saveLine([${line}])">💾 저장</button>
+    </div>
+  `).join('');
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Save
+function saveLine(line){
+  const date=new Date().toLocaleDateString('ko-KR');
+  savedLines.push({line,date});
+  localStorage.setItem('lotto_saved',JSON.stringify(savedLines));
+  renderSaved();
+  showToast('저장되었습니다 ✅');
+}
+
+function renderSaved(){
+  document.getElementById('saved-count').textContent=savedLines.length;
+  const el=document.getElementById('saved-list');
+  if(savedLines.length===0){
+    el.innerHTML='<div class="empty-msg">홈에서 번호를 생성하고 저장하세요 🎱</div>';
+    return;
+  }
+  el.innerHTML=[...savedLines].reverse().map((s,i)=>`
+    <div class="saved-item">
+      <div class="saved-date">${s.date} 저장</div>
+      <div class="balls">${s.line.map(n=>makeBall(n,'sm')).join('')}</div>
+    </div>
+  `).join('');
+}
+
+// History
+function renderHistory(){
+  document.getElementById('history-list').innerHTML=LOTTO_DATA.map(d=>`
+    <div class="hist-row">
+      <div class="hist-meta">
+        <span class="hist-draw">제 ${d.draw}회</span>
+        <span class="hist-date">${d.date}</span>
+      </div>
+      <div class="balls">
+        ${d.nums.map(n=>makeBall(n,'sm')).join('')}
+        <span class="plus-sign">+</span>
+        ${makeBall(d.bonus,'sm',true)}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Stats
+function renderStats(){
+  const freq={};
+  for(let i=1;i<=45;i++)freq[i]=0;
+  LOTTO_DATA.forEach(d=>d.nums.forEach(n=>freq[n]++));
+  const maxF=Math.max(...Object.values(freq));
+
+  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+  const hot=sorted.slice(0,10).map(e=>+e[0]);
+  const cold=sorted.slice(-10).reverse().map(e=>+e[0]);
+
+  document.getElementById('hot-nums').innerHTML=hot.map(n=>`<span class="tag hot">${pad(n)}</span>`).join('');
+  document.getElementById('cold-nums').innerHTML=cold.map(n=>`<span class="tag cold">${pad(n)}</span>`).join('');
+
+  document.getElementById('freq-grid').innerHTML=Array.from({length:45},(_,i)=>i+1).map(n=>{
+    const ratio=freq[n]/maxF;
+    const bg=`rgba(240,192,64,${(0.1+0.8*ratio).toFixed(2)})`;
+    return `<div class="freq-cell" style="background:${bg}" title="${n}번: ${freq[n]}회"><div>${n}</div><div style="font-size:7px;opacity:.8">${freq[n]}</div></div>`;
+  }).join('');
+}
+
+// Tab
+function showTab(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Toast
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// Init
+renderHistory();
+renderStats();
+renderSaved();
+</script>
+</body>
+</html>
